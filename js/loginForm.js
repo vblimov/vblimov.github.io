@@ -129,8 +129,7 @@ const loginFormInit = () => {
   
   loginForget.addEventListener('click', event => {
     event.preventDefault();
-    setUsers.editUser(emailInput.value);
-    emailInput.value
+    setUsers.sendForget(emailInput.value);
   })
   
   setUsers.initUser(toggleAuthDom);

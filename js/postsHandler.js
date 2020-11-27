@@ -2,6 +2,7 @@ const postsWrapper = document.querySelector('.posts');
 const newPostButton = document.querySelector('.button-new-post');
 const addPostForm = document.querySelector('.add-post');
 const editPostForm = document.querySelector('.edit-post');
+const adminEmail = 'vblimov@gmail.com'
 let editablePostID;
 const showAllPosts = () => {
     let postsHTML = '';
@@ -41,13 +42,13 @@ const showAllPosts = () => {
                   <use xlink:href="img/icons.svg#share"></use>
                 </svg>
             </button>
-                    ${setUsers.user? item.val().author.email === (setUsers.user.email || null) || setUsers.user.email === 'vblimov@gmail.com'?
+                    ${setUsers.user? item.val().author.email === (setUsers.user.email || null) || setUsers.user.email === adminEmail?
                           `<button class="post-button post-button-delete" value="${item.val().id}" onclick="deletePost(value)">
                   <svg width="17" height="19" class="icon icon-delete">
                     <use xlink:href="img/icons.svg#delete"></use>
                   </svg>
                 </button>`: `` :``}
-                    ${setUsers.user? item.val().author.email === (setUsers.user.email || null) || setUsers.user.email === 'vblimov@gmail.com'?
+                    ${setUsers.user? item.val().author.email === (setUsers.user.email || null) || setUsers.user.email === adminEmail?
                 `<button class="post-button post-button-edit" value="${item.val().id}" onclick="editPost(value)">
                   <svg width="17" height="19" class="icon icon-edit">
                     <use xlink:href="img/icons.svg#edit"></use>
