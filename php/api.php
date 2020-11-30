@@ -28,3 +28,5 @@ $result = curl_exec($curl);
 curl_close($curl);
 $result = json_decode($result, 1);
 if (array_key_exists('error', $result)) echo "Ошибка при сохранении лида: ".$result['error_description']."<br/>";
+
+?>
