@@ -1,4 +1,6 @@
 <?php
+echo 1111111;
+
 $queryUrl = 'https://b24-4a8be9.bitrix24.ru/rest/1/7j93im6fhm2yvs76/crm.lead.add.json';
 
 // формируем параметры для создания лида в переменной $queryData
