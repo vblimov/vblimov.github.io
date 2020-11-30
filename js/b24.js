@@ -5,9 +5,9 @@ const requestPassword = '159753209';        //пароль
 const requestAutopoiskID = '123456';        //id автопоиска
 const requestReportID = '33934';            //id отчёта, по которому необходимо получить информацию
 const requestYear = '2020';                 //год, за который необходимо получить тендеры
-const defaultDelay = 60000;                 //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1s = 1000)
+const defaultDelay = 6000;                 //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1s = 1000)
 let requestID = null;                       //id запроса на получение отчёта, записывается на основе ответа сервера на запрос сформировать отчёт
-let fileLinks = ["http:\/\/www.tenderland.ru\/content\/99b8660aafccae8ef7cf03dd3e0236be.part1.xml"];
+let fileLinks = [];
 let contactsForNewLeadsCreation = [];
 let contactsOfWinners = [];
 
@@ -23,11 +23,12 @@ let getFileLinkFromRequestID_URL;                                   //url для
 
 TenderLandButton.addEventListener('click', event => {
     event.preventDefault();
-    getRequestID().then(()=> {
-        getFileLinks().then(()=> {
-            getAndFilterFiles();
-        })
-    })
+    $.get("/php/b24.php");
+    // getRequestID().then(()=> {
+    //     getFileLinks().then(()=> {
+    //         getAndFilterFiles();
+    //     })
+    // })
 })
 
 const getRequestID = () =>{
@@ -48,7 +49,6 @@ const getRequestID = () =>{
             })
     })
 }
-
 const getFileLinks = () =>{
     return new Promise((resolve, reject) => {
         let timerGetResponseFile = setInterval(()=> { //таймер на повторение попытки скачать
@@ -70,30 +70,48 @@ const getFileLinks = () =>{
     })
 }
 const getAndFilterFiles = () => {
-    let xmlDoc = [];
+    let responseXML = [];
+    const request = new XMLHttpRequest();
     for(let i = 0; i < fileLinks.length; i++){
         console.log('start ' + fileLinks[i])
-        const request = new XMLHttpRequest();
         request.open('GET', proxy_URL + fileLinks[i]);
         request.responseType = 'document';
         request.onload = () => {
-            xmlDoc.push(request.responseXML);
-            console.log(xmlDoc);
+            console.log(request.responseXML)
+            responseXML.push(request.responseXML);
+            
+            if(responseXML.length === fileLinks.length)
+            {
+                console.log(responseXML[0]);
+                console.log(responseXML[0].children);
+                filterFiles(responseXML);
+            }
         };
         request.send();
     }
-    //const xmlDoc = new DOMParser().parseFromString(xml, "text/xml");
-    let x = new Array(xmlDoc.forEach(item => {
-        item.documentElement.getElementsByTagName('tender')
-    })
-    )
+
+    
+    
+}
+const filterFiles = (responseXML) => {
+    const xmlDoc = [];
+    for (let i = 0; i < responseXML.length; i++) {
+        xmlDoc.push(new DOMParser().parseFromString(responseXML[i].children, "text/xml"))
+        console.log(new DOMParser().parseFromString(responseXML[i].children, "text/xml"))
+    };
+    console.log(xmlDoc)
+    const x = [];
+    for (let i = 0; i < xmlDoc.length; i++){
+        x.push(xmlDoc[i].documentElement.getElementsByTagName('tender'))
+    }
+    console.log(x)
     
     
     let indexOfTenderStatus = 0;
     let indexOfProtocolContactWinner = 0;
     let indexOfDatetimeHolding = 0;
     let indexOfTenderURL = 0;
-    for (let i = 0; i < x[0][0].childNodes.length; i++) {
+    for (let i = 0; i < x[0][0].length; i++) {
         if(x[0][0].childNodes[i].nodeName === 'tender_status'){
             indexOfTenderStatus = i;
         } else if (x[0][0].childNodes[i].nodeName === 'protocol_contact_winner') {
@@ -117,9 +135,7 @@ const getAndFilterFiles = () => {
         }
     }
     console.log(contactsOfWinners);
-    
 }
-
 //https://b24-0cqi8z.bitrix24.ru/rest/1/se7dqno8wl2da734/crm.lead.add.json
 //{"status":"ok","request_id":"0561b22f51fdbef3824a911787d21441"}
 //https://www.tenderland.ru/pages/main?api=1&login=2543123023&password=159753209&request_id=0561b22f51fdbef3824a911787d21441
