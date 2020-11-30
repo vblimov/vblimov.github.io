@@ -1,5 +1,7 @@
 const TenderLandButton = document.querySelector('.TenderLand');
 
+const defaultDelay = 10000;                     //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1s)
+
 let fileLinks = [];
 let contactsForNewLeadsCreation = [];
 let contactsOfWinners = [];
@@ -7,14 +9,16 @@ let contactsOfWinners = [];
 
 TenderLandButton.addEventListener('click', event => {
     event.preventDefault();
-    getRequestID().then((data)=>{
-        console.log(data)
+    // getRequestID().then((data)=>{
+        getFileLinks(/*data*/'b79bf8679af9cf6b94dc44bbf18b57ce').then(() => {
+            getAndFilterFiles();}) //b79bf8679af9cf6b94dc44bbf18b57ce
         // getAndFilterFiles();
-    }).catch(err=> {
-        console.log(err)
-    })
+    // }).catch(err=> {
+    //     console.log(err)
+    // })
+    
     // getRequestID().then((data)=> {
-    //     getFileLinks().then(()=> {
+    //     ().then(()=> {
     //         getAndFilterFiles();
     //     })
     // })
@@ -29,9 +33,12 @@ const getRequestID = () =>{
             dataType: "json",
             success: data => {
                 console.log(data)
-                resolve(data);},
+                if(data.status === "error"){
+                    reject(data.code)
+                }
+                resolve(data["request_id"])
+                },
             error: err => {
-                console.log(err)
                 reject(err);},
             beforeSend: xhr => {
                 xhr.setRequestHeader('X-Test-Header', 'test-value');
@@ -39,7 +46,34 @@ const getRequestID = () =>{
         });
     })
 }
-
+const getFileLinks = (requestID) =>{
+    return new Promise((resolve, reject) => {
+        let timerGetResponseFile = setInterval(() => { //таймер на повторение попытки скачать
+            $.ajax({
+                url: 'php/getFileLinks.php',
+                type: 'POST',
+                dataType: "json",
+                data: {requestID: requestID},
+                success: response => {
+                    console.log(response)
+                            if (response.data.length !== 0) { //если в json не пустой массив (пустой, если отчёт ещё не сформировался)
+                                clearInterval(timerGetResponseFile); //то выключаем таймер повтора запроса
+                                for (let i = 0; i < response.data.length; i++) { //и для всех массивов с фалами
+                                    fileLinks.push(response.data[i].file); //записываем их
+                                }
+                                resolve(); //отправляем, что обещание выполнено и можно приступать в .then функции
+                            }
+                },
+                error: err => {
+                    console.log(err)
+                },
+                beforeSend: xhr => {
+                    xhr.setRequestHeader('X-Test-Header', 'test-value');
+                }
+            });
+        }, defaultDelay) //задержка интервалов
+    })
+}
 const getAndFilterFiles = () => {
     let responseXML = [];
     const request = new XMLHttpRequest();
