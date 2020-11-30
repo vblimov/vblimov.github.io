@@ -1,30 +1,19 @@
 const TenderLandButton = document.querySelector('.TenderLand');
 
-const requestLogin = '2543123023';          //логин
-const requestPassword = '159753209';        //пароль
-const requestAutopoiskID = '123456';        //id автопоиска
-const requestReportID = '33934';            //id отчёта, по которому необходимо получить информацию
-const requestYear = '2020';                 //год, за который необходимо получить тендеры
-const defaultDelay = 6000;                 //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1s = 1000)
-let requestID = null;                       //id запроса на получение отчёта, записывается на основе ответа сервера на запрос сформировать отчёт
 let fileLinks = [];
 let contactsForNewLeadsCreation = [];
 let contactsOfWinners = [];
 
-const proxy_URL = 'https://cors-anywhere.herokuapp.com/';           //url необходимый для обхода cors-блокировки
-const getRequestID_URL = 'https://www.tenderland.ru/pages/main' +   //url для получения request_id
-    '?autopoisk=' + requestAutopoiskID +
-    '&api=1&force_prev=1&report=' + requestReportID +
-    '&login=' + requestLogin +
-    '&password=' + requestPassword +
-    '&year=' + requestYear +
-    '';
-let getFileLinkFromRequestID_URL;                                   //url для получения ссылок на файлы отчёта
 
 TenderLandButton.addEventListener('click', event => {
     event.preventDefault();
-    $.get("/php/b24.php");
-    // getRequestID().then(()=> {
+    getRequestID().then((data)=>{
+        console.log(data)
+        // getAndFilterFiles();
+    }).catch(err=> {
+        console.log(err)
+    })
+    // getRequestID().then((data)=> {
     //     getFileLinks().then(()=> {
     //         getAndFilterFiles();
     //     })
@@ -33,42 +22,24 @@ TenderLandButton.addEventListener('click', event => {
 
 const getRequestID = () =>{
     return new Promise((resolve, reject) => { //создаём обещание
-        fetch(proxy_URL + getRequestID_URL) //отправляем запрос на формирование отчёта
-            .then(response => { //по получении ответа
-                response.json() //переводим в json
-                    .then(json => {
-                        requestID = json.request_id; //получаем request_id
-                        getFileLinkFromRequestID_URL = 'https://www.tenderland.ru/pages/main' +
-                        '?api=1&login=' + requestLogin +
-                        '&password=' + requestPassword +
-                        '&request_id=' + requestID +
-                        ''; //формируем строку для получения результатов отчёта
-                        console.log(json)
-                        resolve();
-                })
-            })
+        
+        $.ajax({
+            url: 'php/getRequestID.php',
+            type: 'POST',
+            dataType: "json",
+            success: data => {
+                console.log(data)
+                resolve(data);},
+            error: err => {
+                console.log(err)
+                reject(err);},
+            beforeSend: xhr => {
+                xhr.setRequestHeader('X-Test-Header', 'test-value');
+                }
+        });
     })
 }
-const getFileLinks = () =>{
-    return new Promise((resolve, reject) => {
-        let timerGetResponseFile = setInterval(()=> { //таймер на повторение попытки скачать
-            fetch(proxy_URL + getFileLinkFromRequestID_URL) //отправка запроса
-                .then(response => { //после отправки запроса, как только получаем ответ
-                    response.json() //переводим его в json
-                        .then(json => { //как только перевели в json
-                            console.log(json)
-                            if(json.data.length !== 0) { //если в json не пустой массив (пустой, если отчёт ещё не сформировался)
-                                clearInterval(timerGetResponseFile); //то выключаем таймер повтора запроса
-                                for(let i = 0; i < json.data.length; i++) { //и для всех массивов с фалами
-                                    fileLinks.push(json.data[i].file); //записываем их
-                                }
-                                resolve(); //отправляем, что обещание выполнено и можно приступать в .then функции
-                            }
-                        })
-                })
-        }, defaultDelay) //задержка интервалов
-    })
-}
+
 const getAndFilterFiles = () => {
     let responseXML = [];
     const request = new XMLHttpRequest();
