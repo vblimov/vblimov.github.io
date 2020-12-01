@@ -1,7 +1,7 @@
 const TenderLandButton = document.querySelector('.TenderLand');
 
-const defaultDelay = 10000;                     //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1s)
-
+const defaultDelay = 30000;                     //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
+const proxy_URL = 'https://cors-anywhere.herokuapp.com/';
 let fileLinks = [];
 let contactsForNewLeadsCreation = [];
 let contactsOfWinners = [];
@@ -9,19 +9,15 @@ let contactsOfWinners = [];
 
 TenderLandButton.addEventListener('click', event => {
     event.preventDefault();
-    // getRequestID().then((data)=>{
-        getFileLinks(/*data*/'b79bf8679af9cf6b94dc44bbf18b57ce').then(() => {
-            getAndFilterFiles();}) //b79bf8679af9cf6b94dc44bbf18b57ce
-        // getAndFilterFiles();
-    // }).catch(err=> {
-    //     console.log(err)
-    // })
-    
-    // getRequestID().then((data)=> {
-    //     ().then(()=> {
-    //         getAndFilterFiles();
-    //     })
-    // })
+     // getRequestID().then((data)=>{
+        getFileLinks('0600bd00a03002a3fb10ab51a0e93d42').then(() => {
+            getAndFilterFiles();
+            }) //44cdbb0a945c543a712dcd41811e25bf
+     // }).catch(err=> {
+     //     console.log(err)
+     // })
+
+    // getAndFilterFiles();
 })
 
 const getRequestID = () =>{
@@ -39,10 +35,7 @@ const getRequestID = () =>{
                 resolve(data["request_id"])
                 },
             error: err => {
-                reject(err);},
-            beforeSend: xhr => {
-                xhr.setRequestHeader('X-Test-Header', 'test-value');
-                }
+                reject(err);}
         });
     })
 }
@@ -56,13 +49,13 @@ const getFileLinks = (requestID) =>{
                 data: {requestID: requestID},
                 success: response => {
                     console.log(response)
-                            if (response.data.length !== 0) { //если в json не пустой массив (пустой, если отчёт ещё не сформировался)
-                                clearInterval(timerGetResponseFile); //то выключаем таймер повтора запроса
-                                for (let i = 0; i < response.data.length; i++) { //и для всех массивов с фалами
-                                    fileLinks.push(response.data[i].file); //записываем их
-                                }
-                                resolve(); //отправляем, что обещание выполнено и можно приступать в .then функции
-                            }
+                    if (response.data.length !== 0) { //если в json не пустой массив (пустой, если отчёт ещё не сформировался)
+                        clearInterval(timerGetResponseFile); //то выключаем таймер повтора запроса
+                        for (let i = 0; i < response.data.length; i++) { //и для всех массивов с фалами
+                            fileLinks.push(response.data[i].file); //записываем их
+                        }
+                        resolve(); //отправляем, что обещание выполнено и можно приступать в .then функции
+                    }
                 },
                 error: err => {
                     console.log(err)
@@ -82,68 +75,86 @@ const getAndFilterFiles = () => {
         request.open('GET', proxy_URL + fileLinks[i]);
         request.responseType = 'document';
         request.onload = () => {
-            console.log(request.responseXML)
+          
             responseXML.push(request.responseXML);
             
             if(responseXML.length === fileLinks.length)
             {
                 console.log(responseXML[0]);
-                console.log(responseXML[0].children);
                 filterFiles(responseXML);
             }
         };
         request.send();
     }
-
-    
-    
 }
 const filterFiles = (responseXML) => {
     const xmlDoc = [];
-    for (let i = 0; i < responseXML.length; i++) {
-        xmlDoc.push(new DOMParser().parseFromString(responseXML[i].children, "text/xml"))
-        console.log(new DOMParser().parseFromString(responseXML[i].children, "text/xml"))
-    };
-    console.log(xmlDoc)
-    const x = [];
-    for (let i = 0; i < xmlDoc.length; i++){
-        x.push(xmlDoc[i].documentElement.getElementsByTagName('tender'))
+    for (let i = 0; i < responseXML.length; i++){
+        xmlDoc.push(responseXML[i].documentElement.getElementsByTagName('tender'))
     }
-    console.log(x)
+    console.log(xmlDoc)
     
-    
+    // TODO не получает поля
     let indexOfTenderStatus = 0;
     let indexOfProtocolContactWinner = 0;
     let indexOfDatetimeHolding = 0;
     let indexOfTenderURL = 0;
-    for (let i = 0; i < x[0][0].length; i++) {
-        if(x[0][0].childNodes[i].nodeName === 'tender_status'){
+    for (let i = 0; i < xmlDoc[0][0].childNodes.length; i++) {
+        if(xmlDoc[0][0].childNodes[i].nodeName === 'tender_status'){
             indexOfTenderStatus = i;
-        } else if (x[0][0].childNodes[i].nodeName === 'protocol_contact_winner') {
+            console.log(indexOfTenderStatus)
+        } else if (xmlDoc[0][0].childNodes[i].nodeName === 'protocol_contact_winner') {
             indexOfProtocolContactWinner = i;
-        } else if (x[0][0].childNodes[i].nodeName === 'datetime_holding') {
+            console.log(indexOfProtocolContactWinner)
+        } else if (xmlDoc[0][0].childNodes[i].nodeName === 'datetime_holding') {
             indexOfDatetimeHolding = i;
-        } else if (x[0][0].childNodes[i].nodeName === 'tender_url') {
+            console.log(indexOfDatetimeHolding)
+        } else if (xmlDoc[0][0].childNodes[i].nodeName === 'tender_url') {
             indexOfTenderURL = i;
+            console.log(indexOfTenderURL)
         }
     }
-    
-    // console.log(indexOfTender_Status)
-    // console.log(x.length)
-    for(let j = 0; j < x.length; j++) {
-        for (let i = 0; i < x[0].length; i++) {
-            if(x[j][i].childNodes[indexOfTenderStatus].textContent !== 'Закупка завершена'){
-                x[j][i].remove();
-            } else if (x[j][i].childNodes[indexOfTenderStatus].textContent === 'Закупка завершена') {
-                contactsOfWinners.push(x[j][i].childNodes[indexOfProtocolContactWinner].textContent)
+    xmlDoc.forEach(array => {
+        console.log(array)
+        for (let i = 0; i < array.length; i++) {
+            if(array[i].childNodes[indexOfTenderStatus].textContent === 'Закупка завершена'){
+                if(!isContactNull(array[i].childNodes[indexOfProtocolContactWinner].textContent))
+                {
+                    contactsOfWinners.push({
+                        contact : array[i].childNodes[indexOfProtocolContactWinner].textContent,
+                        date: array[i].childNodes[indexOfDatetimeHolding].textContent,
+                        url: array[i].childNodes[indexOfTenderURL].textContent
+                })
+                }
+                //TODO похуй на ебаные данные
             }
         }
-    }
+    })
+    
     console.log(contactsOfWinners);
+    contactsOfWinners.forEach(item => {
+    
+
+    $.ajax({
+        url: 'php/writeToFile.php',
+        type: 'POST',
+        dataType: "json",
+        data: {json: item},
+        success: data => {
+            console.log(data)
+        }
+    });
+    })
+}
+
+const isContactNull = (contact) => {
+    if(contact === "")
+        return true;
+    return false;
 }
 //https://b24-0cqi8z.bitrix24.ru/rest/1/se7dqno8wl2da734/crm.lead.add.json
 //{"status":"ok","request_id":"0561b22f51fdbef3824a911787d21441"}
-//https://www.tenderland.ru/pages/main?api=1&login=2543123023&password=159753209&request_id=0561b22f51fdbef3824a911787d21441
+//0561b22f51fdbef3824a911787d21441
 //{
 // "status":"ok",
 // "data":[{
@@ -154,17 +165,4 @@ const filterFiles = (responseXML) => {
 //  "is_last":"1"}]}
 //<protocol_contact_winner>ФИНЧЕНКО КСЕНИЯ АЛЕКСАНДРОВНА 79264692678 ksenia.kafar@yandex.ru</protocol_contact_winner>
 
-const xml = '<tenders>' +
-    '<meta><number type="string" size="128">Номер</number><publish_date type="string" size="512">Дата публикации</publish_date><publish_date_system type="string" size="512">Дата публикации в системе</publish_date_system><publication_date type="datetime">Дата и время начала подачи заявок</publication_date><datetime_dedline_request type="datetime">Дата и время окончания подачи заявок</datetime_dedline_request><datetime_holding type="datetime">Дата и время проведения</datetime_holding><end_review_request type="datetime">Дата окончания срока рассмотрения первых частей заявок</end_review_request><name type="string" size="512">Название тендера</name><request_type type="string" size="512">Тип тендера</request_type><tender_status type="string" size="512">Этап тендера</tender_status><start_price_contract type="double">Начальная цена контракта (лота)</start_price_contract><region type="string" size="512">Регион</region><category type="string" size="512">Категория</category><date_update type="datetime">Дата обновления</date_update><guarantee type="string" size="512">Гарантийные обязательства</guarantee><organizer type="string" size="512">Организатор</organizer><organizer_full type="string" size="512">Организатор полное</organizer_full><organizer_inn type="string" size="13">ИНН организатора</organizer_inn><organizer_kpp type="string" size="512">КПП организатора</organizer_kpp><organizer_okato type="string" size="512">ОКАТО организатора</organizer_okato><organizer_contacts type="string" size="128">Контакты организатора</organizer_contacts><customer type="string" size="512">Заказчик</customer><customer_full type="string" size="512">Заказчик полное</customer_full><customer_inn type="string" size="13">ИНН заказчика</customer_inn><customer_kpp type="string" size="512">КПП заказчика</customer_kpp><customer_okato type="string" size="512">ОКАТО заказчика</customer_okato><customer_contacts type="string" size="128">Контакты заказчика</customer_contacts><representative type="string" size="512">Представитель</representative><representative_full type="string" size="512">Представитель полное</representative_full><representative_inn type="string" size="512">ИНН представителя</representative_inn><representative_kpp type="string" size="512">КПП представителя</representative_kpp><representative_okato type="string" size="512">ОКАТО представителя</representative_okato><representative_contacts type="string" size="512">Контакты представителя</representative_contacts><organization_rate type="string" size="512">Уровень организации</organization_rate><budget_code type="integer" size="11">Код бюджета</budget_code><budget_name type="string" size="512">Наименование бюджета</budget_name><payment_category type="string" size="512">Категория закупки</payment_category><multiple_categories type="string" size="512">Категории</multiple_categories><link type="string" size="512">Ссылка на оф. сайт</link><request_provision_size type="double">Размер обеспечения заявки</request_provision_size><delivery_address type="string" size="512">Адрес места поставки</delivery_address><date_delivery_goods type="datetime">Сроки поставки товара, выполнения работ, оказания услуг</date_delivery_goods><advantages_contract_price type="string" size="512">Преимущества в отношении предлагаемой цены контракта</advantages_contract_price><requirements type="string" size="512">Требования к участникам</requirements><e_place type="string" size="512">Электронная площадка</e_place><archive_link type="string" size="512">Ссылка на архив</archive_link><complete type="string" size="512">Завершенность</complete><note type="string" size="512">Заметка</note><restriction type="string" size="512">Ограничения</restriction><tender_url type="string" size="512">Ссылка на карточку тендера</tender_url><bank_support_info type="string" size="512">Информация о банковском сопровождении контракта</bank_support_info></meta>' +
-    '<tender number="32008781446"><publish_date>20.01.2020 16:30</publish_date><publish_date_system>20.01.2020 18:44</publish_date_system><publication_date>20.01.2020 00:00</publication_date><datetime_dedline_request>28.01.2020 09:00</datetime_dedline_request><datetime_holding>-</datetime_holding><end_review_request>-</end_review_request><name>Выполнение строительно-монтажных работ: «Технологическое присоединение многоквартирных жилых домов со встроенными нежилыми помещениями по адресу: г. Иваново, СНТ "Камвольщик-1", ул. 2 Камвольная (I этап: строительство РТП, прокладка КЛ-6кВ от п/ст "Ив-10" ф.662,631 до РТП)»</name><request_type>ФЗ №223: Конкурс в электронной форме, участниками которого могут быть только субъекты малого и среднего предпринимательства</request_type><tender_status>Работа комиссии</tender_status><start_price_contract>16171273.61</start_price_contract><region>Ивановская область</region><category>Строительство общее, снос</category><date_update>28.01.2020 19:43</date_update><guarantee>-</guarantee><organizer/><organizer_full/><organizer_inn/><organizer_kpp/><organizer_okato/><organizer_contacts/><customer>ОАО "Ивгорэлектросеть"</customer><customer_full>АКЦИОНЕРНОЕ ОБЩЕСТВО "ИВАНОВСКАЯ ГОРОДСКАЯ ЭЛЕКТРИЧЕСКАЯ СЕТЬ"</customer_full><customer_inn>3702607899</customer_inn><customer_kpp>370201001</customer_kpp><customer_okato>24401364000</customer_okato><customer_contacts>Федоров Владимир Владимирович Email: ivges@ivges.ru Тел.:7-4932-329384 Факс:7-4932-414494</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Муниципальный уровень</organization_rate><budget_code/><budget_name/><payment_category>прочие закупки</payment_category><multiple_categories>Строительство общее, снос</multiple_categories><link>http://zakupki.gov.ru/223/purchase/public/purchase/info/common-info.html?regNumber=32008781446</link><request_provision_size/><delivery_address>Центральный федеральный округ, Ивановская   обл, на территории г. Иваново в соответствии с  приложением конкурсной документации</delivery_address><date_delivery_goods/><advantages_contract_price/><requirements/><e_place>http://www.rts-tender.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39447886</archive_link><complete>завершенный</complete><note/><restriction/><tender_url>https://tenderland.ru/pages/tenders/281/39447886</tender_url><bank_support_info>-</bank_support_info></tender>'+
-    '<tender number="5632"><publish_date>20.01.2020 16:30</publish_date><publish_date_system>20.01.2020 18:44</publish_date_system><publication_date>20.01.2020 00:00</publication_date><datetime_dedline_request>28.01.2020 09:00</datetime_dedline_request><datetime_holding>-</datetime_holding><end_review_request>-</end_review_request><name>Выполнение строительно-монтажных работ: «Технологическое присоединение многоквартирных жилых домов со встроенными нежилыми помещениями по адресу: г. Иваново, СНТ "Камвольщик-1", ул. 2 Камвольная (I этап: строительство РТП, прокладка КЛ-6кВ от п/ст "Ив-10" ф.662,631 до РТП)»</name><request_type>ФЗ №223: Конкурс в электронной форме, участниками которого могут быть только субъекты малого и среднего предпринимательства</request_type><tender_status>Работа комиссии</tender_status><start_price_contract>16171273.61</start_price_contract><region>Ивановская область</region><category>Строительство общее, снос</category><date_update>28.01.2020 19:43</date_update><guarantee>-</guarantee><organizer/><organizer_full/><organizer_inn/><organizer_kpp/><organizer_okato/><organizer_contacts/><customer>ОАО "Ивгорэлектросеть"</customer><customer_full>АКЦИОНЕРНОЕ ОБЩЕСТВО "ИВАНОВСКАЯ ГОРОДСКАЯ ЭЛЕКТРИЧЕСКАЯ СЕТЬ"</customer_full><customer_inn>3702607899</customer_inn><customer_kpp>370201001</customer_kpp><customer_okato>24401364000</customer_okato><customer_contacts>Федоров Владимир Владимирович Email: ivges@ivges.ru Тел.:7-4932-329384 Факс:7-4932-414494</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Муниципальный уровень</organization_rate><budget_code/><budget_name/><payment_category>прочие закупки</payment_category><multiple_categories>Строительство общее, снос</multiple_categories><link>http://zakupki.gov.ru/223/purchase/public/purchase/info/common-info.html?regNumber=32008781446</link><request_provision_size/><delivery_address>Центральный федеральный округ, Ивановская   обл, на территории г. Иваново в соответствии с  приложением конкурсной документации</delivery_address><date_delivery_goods/><advantages_contract_price/><requirements/><e_place>http://www.rts-tender.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39447886</archive_link><complete>завершенный</complete><note/><restriction/><tender_url>https://tenderland.ru/pages/tenders/281/39447886</tender_url><bank_support_info>-</bank_support_info></tender>'+
-    '<tender number="2416"><publish_date>20.01.2020 16:30</publish_date><publish_date_system>20.01.2020 18:44</publish_date_system><publication_date>20.01.2020 00:00</publication_date><datetime_dedline_request>28.01.2020 09:00</datetime_dedline_request><datetime_holding>-</datetime_holding><end_review_request>-</end_review_request><name>Выполнение строительно-монтажных работ: «Технологическое присоединение многоквартирных жилых домов со встроенными нежилыми помещениями по адресу: г. Иваново, СНТ "Камвольщик-1", ул. 2 Камвольная (I этап: строительство РТП, прокладка КЛ-6кВ от п/ст "Ив-10" ф.662,631 до РТП)»</name><request_type>ФЗ №223: Конкурс в электронной форме, участниками которого могут быть только субъекты малого и среднего предпринимательства</request_type><tender_status>Работа комиссии</tender_status><start_price_contract>16171273.61</start_price_contract><region>Ивановская область</region><category>Строительство общее, снос</category><date_update>28.01.2020 19:43</date_update><guarantee>-</guarantee><organizer/><organizer_full/><organizer_inn/><organizer_kpp/><organizer_okato/><organizer_contacts/><customer>ОАО "Ивгорэлектросеть"</customer><customer_full>АКЦИОНЕРНОЕ ОБЩЕСТВО "ИВАНОВСКАЯ ГОРОДСКАЯ ЭЛЕКТРИЧЕСКАЯ СЕТЬ"</customer_full><customer_inn>3702607899</customer_inn><customer_kpp>370201001</customer_kpp><customer_okato>24401364000</customer_okato><customer_contacts>Федоров Владимир Владимирович Email: ivges@ivges.ru Тел.:7-4932-329384 Факс:7-4932-414494</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Муниципальный уровень</organization_rate><budget_code/><budget_name/><payment_category>прочие закупки</payment_category><multiple_categories>Строительство общее, снос</multiple_categories><link>http://zakupki.gov.ru/223/purchase/public/purchase/info/common-info.html?regNumber=32008781446</link><request_provision_size/><delivery_address>Центральный федеральный округ, Ивановская   обл, на территории г. Иваново в соответствии с  приложением конкурсной документации</delivery_address><date_delivery_goods/><advantages_contract_price/><requirements/><e_place>http://www.rts-tender.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39447886</archive_link><complete>завершенный</complete><note/><restriction/><tender_url>https://tenderland.ru/pages/tenders/281/39447886</tender_url><bank_support_info>-</bank_support_info></tender>'+
-    '<tender number="752"><publish_date>15.01.2020 12:43</publish_date><publish_date_system>15.01.2020 15:51</publish_date_system><publication_date>15.01.2020 15:43</publication_date><datetime_dedline_request>15.01.2020 17:43</datetime_dedline_request><datetime_holding>-</datetime_holding><end_review_request>-</end_review_request><name>Оказание услуг по комплексной очистке кровли от снега и наледи, 1 ч</name><request_type>Закупки малого объема</request_type><tender_status>Подача заявок</tender_status><start_price_contract>28000</start_price_contract><region>Ивановская область</region><category>Кровельные работы</category><date_update>15.01.2020 15:51</date_update><guarantee>-</guarantee><organizer/><organizer_full/><organizer_inn/><organizer_kpp/><organizer_okato/><organizer_contacts/><customer>ФГКУ КОМБИНАТ "РОДНИК" РОСРЕЗЕРВА</customer><customer_full>ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ КОМБИНАТ "РОДНИК" УПРАВЛЕНИЯ ФЕДЕРАЛЬНОГО АГЕНТСТВА ПО ГОСУДАРСТВЕННЫМ РЕЗЕРВАМ ПО ЦЕНТРАЛЬНОМУ ФЕДЕРАЛЬНОМУ ОКРУГУ</customer_full><customer_inn>3702009070</customer_inn><customer_kpp>370201001</customer_kpp><customer_okato/><customer_contacts>Кондратенко Денис Андреевич Email: rodnik@cnt.rosreserv.ru Тел.:7-4932-386278 Факс:7-4932-386278</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Федеральный уровень</organization_rate><budget_code>99010001</budget_code><budget_name>Федеральный бюджет</budget_name><payment_category>прочие закупки</payment_category><multiple_categories>Кровельные работы</multiple_categories><link>https://agregatoreat.ru/purchase/845481/order-info</link><request_provision_size/><delivery_address>Российская Федерация, 153017, Ивановская обл, Иваново г, ул. Красных Зорь, д. 44б</delivery_address><date_delivery_goods/><advantages_contract_price/><requirements/><e_place>agregatoreat.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39372843</archive_link><complete>завершенный</complete><note/><restriction/><tender_url>https://tenderland.ru/pages/tenders/601/39372843</tender_url><bank_support_info>-</bank_support_info></tender>'+
-    '<tender number="48653"><publish_date>15.01.2020 12:43</publish_date><publish_date_system>15.01.2020 15:51</publish_date_system><publication_date>15.01.2020 15:43</publication_date><datetime_dedline_request>15.01.2020 17:43</datetime_dedline_request><datetime_holding>-</datetime_holding><end_review_request>-</end_review_request><name>Оказание услуг по комплексной очистке кровли от снега и наледи, 1 ч</name><request_type>Закупки малого объема</request_type><tender_status>Подача заявок</tender_status><start_price_contract>28000</start_price_contract><region>Ивановская область</region><category>Кровельные работы</category><date_update>15.01.2020 15:51</date_update><guarantee>-</guarantee><organizer/><organizer_full/><organizer_inn/><organizer_kpp/><organizer_okato/><organizer_contacts/><customer>ФГКУ КОМБИНАТ "РОДНИК" РОСРЕЗЕРВА</customer><customer_full>ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ КОМБИНАТ "РОДНИК" УПРАВЛЕНИЯ ФЕДЕРАЛЬНОГО АГЕНТСТВА ПО ГОСУДАРСТВЕННЫМ РЕЗЕРВАМ ПО ЦЕНТРАЛЬНОМУ ФЕДЕРАЛЬНОМУ ОКРУГУ</customer_full><customer_inn>3702009070</customer_inn><customer_kpp>370201001</customer_kpp><customer_okato/><customer_contacts>Кондратенко Денис Андреевич Email: rodnik@cnt.rosreserv.ru Тел.:7-4932-386278 Факс:7-4932-386278</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Федеральный уровень</organization_rate><budget_code>99010001</budget_code><budget_name>Федеральный бюджет</budget_name><payment_category>прочие закупки</payment_category><multiple_categories>Кровельные работы</multiple_categories><link>https://agregatoreat.ru/purchase/845481/order-info</link><request_provision_size/><delivery_address>Российская Федерация, 153017, Ивановская обл, Иваново г, ул. Красных Зорь, д. 44б</delivery_address><date_delivery_goods/><advantages_contract_price/><requirements/><e_place>agregatoreat.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39372843</archive_link><complete>завершенный</complete><note/><restriction/><tender_url>https://tenderland.ru/pages/tenders/601/39372843</tender_url><bank_support_info>-</bank_support_info></tender>'+
-    '<tender number="100297268119000137"><publish_date>15.01.2020 12:43</publish_date><publish_date_system>15.01.2020 15:51</publish_date_system><publication_date>15.01.2020 15:43</publication_date><datetime_dedline_request>15.01.2020 17:43</datetime_dedline_request><datetime_holding>-</datetime_holding><end_review_request>-</end_review_request><name>Оказание услуг по комплексной очистке кровли от снега и наледи, 1 ч</name><request_type>Закупки малого объема</request_type><tender_status>Подача заявок</tender_status><start_price_contract>28000</start_price_contract><region>Ивановская область</region><category>Кровельные работы</category><date_update>15.01.2020 15:51</date_update><guarantee>-</guarantee><organizer/><organizer_full/><organizer_inn/><organizer_kpp/><organizer_okato/><organizer_contacts/><customer>ФГКУ КОМБИНАТ "РОДНИК" РОСРЕЗЕРВА</customer><customer_full>ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ КОМБИНАТ "РОДНИК" УПРАВЛЕНИЯ ФЕДЕРАЛЬНОГО АГЕНТСТВА ПО ГОСУДАРСТВЕННЫМ РЕЗЕРВАМ ПО ЦЕНТРАЛЬНОМУ ФЕДЕРАЛЬНОМУ ОКРУГУ</customer_full><customer_inn>3702009070</customer_inn><customer_kpp>370201001</customer_kpp><customer_okato/><customer_contacts>Кондратенко Денис Андреевич Email: rodnik@cnt.rosreserv.ru Тел.:7-4932-386278 Факс:7-4932-386278</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Федеральный уровень</organization_rate><budget_code>99010001</budget_code><budget_name>Федеральный бюджет</budget_name><payment_category>прочие закупки</payment_category><multiple_categories>Кровельные работы</multiple_categories><link>https://agregatoreat.ru/purchase/845481/order-info</link><request_provision_size/><delivery_address>Российская Федерация, 153017, Ивановская обл, Иваново г, ул. Красных Зорь, д. 44б</delivery_address><date_delivery_goods/><advantages_contract_price/><requirements/><e_place>agregatoreat.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39372843</archive_link><complete>завершенный</complete><note/><restriction/><tender_url>https://tenderland.ru/pages/tenders/601/39372843</tender_url><bank_support_info>-</bank_support_info></tender>'+
-    '<tender number="48745"><publish_date>15.01.2020 12:43</publish_date><publish_date_system>15.01.2020 15:51</publish_date_system><publication_date>15.01.2020 15:43</publication_date><datetime_dedline_request>15.01.2020 17:43</datetime_dedline_request><datetime_holding>-</datetime_holding><end_review_request>-</end_review_request><name>Оказание услуг по комплексной очистке кровли от снега и наледи, 1 ч</name><request_type>Закупки малого объема</request_type><tender_status>Подача заявок</tender_status><start_price_contract>28000</start_price_contract><region>Ивановская область</region><category>Кровельные работы</category><date_update>15.01.2020 15:51</date_update><guarantee>-</guarantee><organizer/><organizer_full/><organizer_inn/><organizer_kpp/><organizer_okato/><organizer_contacts/><customer>ФГКУ КОМБИНАТ "РОДНИК" РОСРЕЗЕРВА</customer><customer_full>ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ КОМБИНАТ "РОДНИК" УПРАВЛЕНИЯ ФЕДЕРАЛЬНОГО АГЕНТСТВА ПО ГОСУДАРСТВЕННЫМ РЕЗЕРВАМ ПО ЦЕНТРАЛЬНОМУ ФЕДЕРАЛЬНОМУ ОКРУГУ</customer_full><customer_inn>3702009070</customer_inn><customer_kpp>370201001</customer_kpp><customer_okato/><customer_contacts>Кондратенко Денис Андреевич Email: rodnik@cnt.rosreserv.ru Тел.:7-4932-386278 Факс:7-4932-386278</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Федеральный уровень</organization_rate><budget_code>99010001</budget_code><budget_name>Федеральный бюджет</budget_name><payment_category>прочие закупки</payment_category><multiple_categories>Кровельные работы</multiple_categories><link>https://agregatoreat.ru/purchase/845481/order-info</link><request_provision_size/><delivery_address>Российская Федерация, 153017, Ивановская обл, Иваново г, ул. Красных Зорь, д. 44б</delivery_address><date_delivery_goods/><advantages_contract_price/><requirements/><e_place>agregatoreat.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39372843</archive_link><complete>завершенный</complete><note/><restriction/><tender_url>https://tenderland.ru/pages/tenders/601/39372843</tender_url><bank_support_info>-</bank_support_info></tender>'+
-    '<tender number="01333000001"><publish_date>21.01.2020 00:00</publish_date><publish_date_system>21.01.2020 12:07</publish_date_system><publication_date>21.01.2020 10:46</publication_date><datetime_dedline_request>31.01.2020 08:00</datetime_dedline_request><datetime_holding>31.01.2020 12:00</datetime_holding><end_review_request>-</end_review_request><name>Снос и вывоз аварийного дома по адресу: г.Приволжск, ул.Революционная, д.120</name><request_type>Электронный аукцион</request_type><tender_status>Закупка завершена</tender_status><start_price_contract>159748.9</start_price_contract><region>Ивановская область</region><category>Строительство общее, снос</category><date_update>21.02.2020 12:45</date_update><guarantee>-</guarantee><organizer>АДМИНИСТРАЦИЯ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</organizer><organizer_full>АДМИНИСТРАЦИЯ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</organizer_full><organizer_inn>3719001961</organizer_inn><organizer_kpp>371901001</organizer_kpp><organizer_okato/><organizer_contacts>Голубева Ольга Николаевна Email: ekonomiki-k@mail.ru Тел.:7-49339-42156 Факс:7-49339-42156</organizer_contacts><customer>МКУ ОТДЕЛ СТРОИТЕЛЬСТВА</customer><customer_full>МУНИЦИПАЛЬНОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ ОТДЕЛ СТРОИТЕЛЬСТВА АДМИНИСТРАЦИИ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</customer_full><customer_inn>3705009110</customer_inn><customer_kpp>370501001</customer_kpp><customer_okato>0</customer_okato><customer_contacts>Субботина Марина Ивановна Email: mku-37@mail.ru Тел.:7-49339-21563 Факс:7-49339-41858</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Муниципальный уровень</organization_rate><budget_code>33030329</budget_code><budget_name>Бюджет Приволжского муниципального района</budget_name><payment_category>прочие закупки</payment_category><multiple_categories>Строительство общее, снос</multiple_categories><link>http://zakupki.gov.ru/epz/order/notice/ea44/view/common-info.html?regNumber=0133300012620000001</link><request_provision_size>0</request_provision_size><delivery_address>Российская Федерация, Ивановская обл, Ивановская область, г.Приволжск, ул. Революционная, д.120</delivery_address><date_delivery_goods>С момента заключения контракта до 20.05.2020</date_delivery_goods><advantages_contract_price/><requirements>Единые требования к участникам (в соответствии  с частью 1 статьи 31 Федерального закона № 44-ФЗ);    Единые требования к участникам (в соответствии  с частью 1.1 статьи 31 Федерального закона № 44-ФЗ);</requirements><e_place>http://roseltorg.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39456129</archive_link><complete>завершенный</complete><note/><restriction>Не установлены</restriction><tender_url>https://tenderland.ru/pages/tenders/281/39456129</tender_url><bank_support_info>Банковское или казначейское сопровождение контракта не требуется</bank_support_info></tender>'+
-    '<tender number="687645"><publish_date>21.01.2020 00:00</publish_date><publish_date_system>21.01.2020 12:07</publish_date_system><publication_date>21.01.2020 10:46</publication_date><datetime_dedline_request>31.01.2020 08:00</datetime_dedline_request><datetime_holding>31.01.2020 12:00</datetime_holding><end_review_request>-</end_review_request><name>Снос и вывоз аварийного дома по адресу: г.Приволжск, ул.Революционная, д.120</name><request_type>Электронный аукцион</request_type><tender_status>Закупка завершена</tender_status><start_price_contract>159748.9</start_price_contract><region>Ивановская область</region><category>Строительство общее, снос</category><date_update>21.02.2020 12:45</date_update><guarantee>-</guarantee><organizer>АДМИНИСТРАЦИЯ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</organizer><organizer_full>АДМИНИСТРАЦИЯ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</organizer_full><organizer_inn>3719001961</organizer_inn><organizer_kpp>371901001</organizer_kpp><organizer_okato/><organizer_contacts>Голубева Ольга Николаевна Email: ekonomiki-k@mail.ru Тел.:7-49339-42156 Факс:7-49339-42156</organizer_contacts><customer>МКУ ОТДЕЛ СТРОИТЕЛЬСТВА</customer><customer_full>МУНИЦИПАЛЬНОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ ОТДЕЛ СТРОИТЕЛЬСТВА АДМИНИСТРАЦИИ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</customer_full><customer_inn>3705009110</customer_inn><customer_kpp>370501001</customer_kpp><customer_okato>0</customer_okato><customer_contacts>Субботина Марина Ивановна Email: mku-37@mail.ru Тел.:7-49339-21563 Факс:7-49339-41858</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Муниципальный уровень</organization_rate><budget_code>33030329</budget_code><budget_name>Бюджет Приволжского муниципального района</budget_name><payment_category>прочие закупки</payment_category><multiple_categories>Строительство общее, снос</multiple_categories><link>http://zakupki.gov.ru/epz/order/notice/ea44/view/common-info.html?regNumber=0133300012620000001</link><request_provision_size>0</request_provision_size><delivery_address>Российская Федерация, Ивановская обл, Ивановская область, г.Приволжск, ул. Революционная, д.120</delivery_address><date_delivery_goods>С момента заключения контракта до 20.05.2020</date_delivery_goods><advantages_contract_price/><requirements>Единые требования к участникам (в соответствии  с частью 1 статьи 31 Федерального закона № 44-ФЗ);    Единые требования к участникам (в соответствии  с частью 1.1 статьи 31 Федерального закона № 44-ФЗ);</requirements><e_place>http://roseltorg.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39456129</archive_link><complete>завершенный</complete><note/><restriction>Не установлены</restriction><tender_url>https://tenderland.ru/pages/tenders/281/39456129</tender_url><bank_support_info>Банковское или казначейское сопровождение контракта не требуется</bank_support_info></tender>'+
-    '<tender number="7856"><publish_date>21.01.2020 00:00</publish_date><publish_date_system>21.01.2020 12:07</publish_date_system><publication_date>21.01.2020 10:46</publication_date><datetime_dedline_request>31.01.2020 08:00</datetime_dedline_request><datetime_holding>31.01.2020 12:00</datetime_holding><end_review_request>-</end_review_request><name>Снос и вывоз аварийного дома по адресу: г.Приволжск, ул.Революционная, д.120</name><request_type>Электронный аукцион</request_type><tender_status>Закупка завершена</tender_status><start_price_contract>159748.9</start_price_contract><region>Ивановская область</region><category>Строительство общее, снос</category><date_update>21.02.2020 12:45</date_update><guarantee>-</guarantee><organizer>АДМИНИСТРАЦИЯ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</organizer><organizer_full>АДМИНИСТРАЦИЯ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</organizer_full><organizer_inn>3719001961</organizer_inn><organizer_kpp>371901001</organizer_kpp><organizer_okato/><organizer_contacts>Голубева Ольга Николаевна Email: ekonomiki-k@mail.ru Тел.:7-49339-42156 Факс:7-49339-42156</organizer_contacts><customer>МКУ ОТДЕЛ СТРОИТЕЛЬСТВА</customer><customer_full>МУНИЦИПАЛЬНОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ ОТДЕЛ СТРОИТЕЛЬСТВА АДМИНИСТРАЦИИ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</customer_full><customer_inn>3705009110</customer_inn><customer_kpp>370501001</customer_kpp><customer_okato>0</customer_okato><customer_contacts>Субботина Марина Ивановна Email: mku-37@mail.ru Тел.:7-49339-21563 Факс:7-49339-41858</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Муниципальный уровень</organization_rate><budget_code>33030329</budget_code><budget_name>Бюджет Приволжского муниципального района</budget_name><payment_category>прочие закупки</payment_category><multiple_categories>Строительство общее, снос</multiple_categories><link>http://zakupki.gov.ru/epz/order/notice/ea44/view/common-info.html?regNumber=0133300012620000001</link><request_provision_size>0</request_provision_size><delivery_address>Российская Федерация, Ивановская обл, Ивановская область, г.Приволжск, ул. Революционная, д.120</delivery_address><date_delivery_goods>С момента заключения контракта до 20.05.2020</date_delivery_goods><advantages_contract_price/><requirements>Единые требования к участникам (в соответствии  с частью 1 статьи 31 Федерального закона № 44-ФЗ);    Единые требования к участникам (в соответствии  с частью 1.1 статьи 31 Федерального закона № 44-ФЗ);</requirements><e_place>http://roseltorg.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39456129</archive_link><complete>завершенный</complete><note/><restriction>Не установлены</restriction><tender_url>https://tenderland.ru/pages/tenders/281/39456129</tender_url><bank_support_info>Банковское или казначейское сопровождение контракта не требуется</bank_support_info></tender>'+
-    '<tender number="0133300012620000001"><publish_date>21.01.2020 00:00</publish_date><publish_date_system>21.01.2020 12:07</publish_date_system><publication_date>21.01.2020 10:46</publication_date><datetime_dedline_request>31.01.2020 08:00</datetime_dedline_request><datetime_holding>31.01.2020 12:00</datetime_holding><end_review_request>-</end_review_request><name>Снос и вывоз аварийного дома по адресу: г.Приволжск, ул.Революционная, д.120</name><request_type>Электронный аукцион</request_type><tender_status>Закупка завершена</tender_status><start_price_contract>159748.9</start_price_contract><region>Ивановская область</region><category>Строительство общее, снос</category><date_update>21.02.2020 12:45</date_update><guarantee>-</guarantee><organizer>АДМИНИСТРАЦИЯ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</organizer><organizer_full>АДМИНИСТРАЦИЯ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</organizer_full><organizer_inn>3719001961</organizer_inn><organizer_kpp>371901001</organizer_kpp><organizer_okato/><organizer_contacts>Голубева Ольга Николаевна Email: ekonomiki-k@mail.ru Тел.:7-49339-42156 Факс:7-49339-42156</organizer_contacts><customer>МКУ ОТДЕЛ СТРОИТЕЛЬСТВА</customer><customer_full>МУНИЦИПАЛЬНОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ ОТДЕЛ СТРОИТЕЛЬСТВА АДМИНИСТРАЦИИ ПРИВОЛЖСКОГО МУНИЦИПАЛЬНОГО РАЙОНА</customer_full><customer_inn>3705009110</customer_inn><customer_kpp>370501001</customer_kpp><customer_okato>0</customer_okato><customer_contacts>Субботина Марина Ивановна Email: mku-37@mail.ru Тел.:7-49339-21563 Факс:7-49339-41858</customer_contacts><representative/><representative_full/><representative_inn/><representative_kpp/><representative_okato/><representative_contacts/><organization_rate>Муниципальный уровень</organization_rate><budget_code>33030329</budget_code><budget_name>Бюджет Приволжского муниципального района</budget_name><payment_category>прочие закупки</payment_category><multiple_categories>Строительство общее, снос</multiple_categories><link>http://zakupki.gov.ru/epz/order/notice/ea44/view/common-info.html?regNumber=0133300012620000001</link><request_provision_size>0</request_provision_size><delivery_address>Российская Федерация, Ивановская обл, Ивановская область, г.Приволжск, ул. Революционная, д.120</delivery_address><date_delivery_goods>С момента заключения контракта до 20.05.2020</date_delivery_goods><advantages_contract_price/><requirements>Единые требования к участникам (в соответствии  с частью 1 статьи 31 Федерального закона № 44-ФЗ);    Единые требования к участникам (в соответствии  с частью 1.1 статьи 31 Федерального закона № 44-ФЗ);</requirements><e_place>http://roseltorg.ru</e_place><archive_link>http://www.tenderland.ru/getarch.php?id=39456129</archive_link><complete>завершенный</complete><note/><restriction>Не установлены</restriction><tender_url>https://tenderland.ru/pages/tenders/281/39456129</tender_url><bank_support_info>Банковское или казначейское сопровождение контракта не требуется</bank_support_info></tender>'+
-    '</tenders>';
+

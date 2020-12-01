@@ -17,7 +17,7 @@ const getRequestID_URL = 'https://www.tenderland.ru/pages/main' .   //url для
     '&password=' . requestPassword .
     '&year=' . requestYear .
     '';
-const proxy_URL = 'https://cors-anywhere.herokuapp.com/';
+
 function getRequestID() {
     try {
         $curl = curl_init();
