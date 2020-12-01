@@ -1,6 +1,6 @@
 const TenderLandButton = document.querySelector('.TenderLand');
 
-const defaultDelay = 10000; //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
+const defaultDelay = 120000; //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
 //не ставить значение меньше 10сек!!!!
 const proxy_URL = 'https://cors-anywhere.herokuapp.com/';
 let fileLinks = [];
@@ -96,9 +96,12 @@ const filterFiles = (responseXML) => {
     }
     console.log(xmlDoc)
     // обработка пустого массива
-    if(xmlDoc[0].length === 0)
+    if(xmlDoc[0].length === 0){
+        console.log('empty array')
         return;
-
+    
+    }
+    
     let indexOfTenderStatus = 0;
     let indexOfProtocolContactWinner = 0;
     let indexOfDatetimeHolding = 0;
