@@ -1,6 +1,6 @@
 const TenderLandButton = document.querySelector('.TenderLand');
 
-const defaultDelay = 30000;                     //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
+const defaultDelay = 6000;                     //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
 const proxy_URL = 'https://cors-anywhere.herokuapp.com/';
 let fileLinks = [];
 let contactsForNewLeadsCreation = [];
@@ -10,9 +10,9 @@ let contactsOfWinners = [];
 TenderLandButton.addEventListener('click', event => {
     event.preventDefault();
      // getRequestID().then((data)=>{
-        getFileLinks('0600bd00a03002a3fb10ab51a0e93d42').then(() => {
+        getFileLinks('1068ef32cf0d521f68b1206bcb1ffb38').then(() => { //TODO делать через пхп
             getAndFilterFiles();
-            }) //44cdbb0a945c543a712dcd41811e25bf
+            }) //1068ef32cf0d521f68b1206bcb1ffb38
      // }).catch(err=> {
      //     console.log(err)
      // })
@@ -94,7 +94,6 @@ const filterFiles = (responseXML) => {
     }
     console.log(xmlDoc)
     
-    // TODO не получает поля
     let indexOfTenderStatus = 0;
     let indexOfProtocolContactWinner = 0;
     let indexOfDatetimeHolding = 0;
@@ -102,16 +101,12 @@ const filterFiles = (responseXML) => {
     for (let i = 0; i < xmlDoc[0][0].childNodes.length; i++) {
         if(xmlDoc[0][0].childNodes[i].nodeName === 'tender_status'){
             indexOfTenderStatus = i;
-            console.log(indexOfTenderStatus)
         } else if (xmlDoc[0][0].childNodes[i].nodeName === 'protocol_contact_winner') {
             indexOfProtocolContactWinner = i;
-            console.log(indexOfProtocolContactWinner)
         } else if (xmlDoc[0][0].childNodes[i].nodeName === 'datetime_holding') {
             indexOfDatetimeHolding = i;
-            console.log(indexOfDatetimeHolding)
         } else if (xmlDoc[0][0].childNodes[i].nodeName === 'tender_url') {
             indexOfTenderURL = i;
-            console.log(indexOfTenderURL)
         }
     }
     xmlDoc.forEach(array => {
@@ -121,30 +116,21 @@ const filterFiles = (responseXML) => {
                 if(!isContactNull(array[i].childNodes[indexOfProtocolContactWinner].textContent))
                 {
                     contactsOfWinners.push({
+                        tenderNumber : array[i].getAttribute("number"),
                         contact : array[i].childNodes[indexOfProtocolContactWinner].textContent,
                         date: array[i].childNodes[indexOfDatetimeHolding].textContent,
                         url: array[i].childNodes[indexOfTenderURL].textContent
                 })
                 }
-                //TODO похуй на ебаные данные
             }
         }
     })
-    
     console.log(contactsOfWinners);
-    contactsOfWinners.forEach(item => {
-    
-
-    $.ajax({
-        url: 'php/writeToFile.php',
-        type: 'POST',
-        dataType: "json",
-        data: {json: item},
-        success: data => {
-            console.log(data)
-        }
-    });
-    })
+    console.log(contactsOfWinners[contactsOfWinners.length-1]);
+    console.log(contactsOfWinners[contactsOfWinners.length-1].date);
+    // contactsOfWinners[contactsOfWinners.length].json().then(json => {
+    //     getLastUpdateDate(json.date);
+    // })
 }
 
 const isContactNull = (contact) => {
@@ -152,6 +138,21 @@ const isContactNull = (contact) => {
         return true;
     return false;
 }
+const getLastUpdateDate = (date) => {
+    $.ajax({
+        url: 'php/isLessThanDate.php',
+        type: 'POST',
+        dataType: "json",
+        data: {date: date},
+        success: data => {
+            alert(data);
+        },
+        error: err => {
+            console.log(err)
+        }
+    });
+}
+
 //https://b24-0cqi8z.bitrix24.ru/rest/1/se7dqno8wl2da734/crm.lead.add.json
 //{"status":"ok","request_id":"0561b22f51fdbef3824a911787d21441"}
 //0561b22f51fdbef3824a911787d21441

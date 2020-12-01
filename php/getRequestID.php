@@ -12,7 +12,7 @@ const requestYear = '2020';                 //год, за который нео
 '';*/
 const getRequestID_URL = 'https://www.tenderland.ru/pages/main' .   //url для получения request_id
     '?autopoisk=' . requestAutopoiskID .
-    '&api=1&force_prev=1&report=' . requestReportID .
+    '&api=1&force_prev=0&report=' . requestReportID .
     '&login=' . requestLogin .
     '&password=' . requestPassword .
     '&year=' . requestYear .
