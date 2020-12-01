@@ -10,12 +10,3 @@ function writeToFile($path, $data) {
         fwrite($myFile, $data);
         fclose($myFile);
 }
-$currentDate = $_POST['date'];
-$lastDate = readMyFiles('./lastUpdateDate.txt');
-writeToFile('./lastUpdateDate.txt', $currentDate);
-
-if($lastDate === null) {
-    print json_encode("");
-} else {
-    print json_encode($lastDate);
-}

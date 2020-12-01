@@ -1,6 +1,7 @@
 const TenderLandButton = document.querySelector('.TenderLand');
 
-const defaultDelay = 6000;                     //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
+const defaultDelay = 10000; //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
+//не ставить значение меньше 10сек!!!!
 const proxy_URL = 'https://cors-anywhere.herokuapp.com/';
 let fileLinks = [];
 let contactsForNewLeadsCreation = [];
@@ -9,13 +10,14 @@ let contactsOfWinners = [];
 
 TenderLandButton.addEventListener('click', event => {
     event.preventDefault();
-     // getRequestID().then((data)=>{
-        getFileLinks('1068ef32cf0d521f68b1206bcb1ffb38').then(() => { //TODO делать через пхп
+     getRequestID().then((data)=>{
+        getFileLinks(data).then(() => {
             getAndFilterFiles();
-            }) //1068ef32cf0d521f68b1206bcb1ffb38
-     // }).catch(err=> {
-     //     console.log(err)
-     // })
+            })//5c2579457427c4136ac3cb8fe3acb94c
+         // 1bedbd1136f73736fcc0c86844d7f75b //b2df0b9d3e31d68fee247032319bef8f
+     }).catch(err=> {
+         console.log(err)
+     })
 
     // getAndFilterFiles();
 })
@@ -75,9 +77,9 @@ const getAndFilterFiles = () => {
         request.open('GET', proxy_URL + fileLinks[i]);
         request.responseType = 'document';
         request.onload = () => {
-          
+
             responseXML.push(request.responseXML);
-            
+
             if(responseXML.length === fileLinks.length)
             {
                 console.log(responseXML[0]);
@@ -93,7 +95,10 @@ const filterFiles = (responseXML) => {
         xmlDoc.push(responseXML[i].documentElement.getElementsByTagName('tender'))
     }
     console.log(xmlDoc)
-    
+    // обработка пустого массива
+    if(xmlDoc[0].length === 0)
+        return;
+
     let indexOfTenderStatus = 0;
     let indexOfProtocolContactWinner = 0;
     let indexOfDatetimeHolding = 0;
@@ -113,7 +118,7 @@ const filterFiles = (responseXML) => {
         console.log(array)
         for (let i = 0; i < array.length; i++) {
             if(array[i].childNodes[indexOfTenderStatus].textContent === 'Закупка завершена'){
-                if(!isContactNull(array[i].childNodes[indexOfProtocolContactWinner].textContent))
+                if(array[i].childNodes[indexOfProtocolContactWinner].textContent !== "")
                 {
                     contactsOfWinners.push({
                         tenderNumber : array[i].getAttribute("number"),
@@ -125,32 +130,6 @@ const filterFiles = (responseXML) => {
             }
         }
     })
-    console.log(contactsOfWinners);
-    console.log(contactsOfWinners[contactsOfWinners.length-1]);
-    console.log(contactsOfWinners[contactsOfWinners.length-1].date);
-    // contactsOfWinners[contactsOfWinners.length].json().then(json => {
-    //     getLastUpdateDate(json.date);
-    // })
-}
-
-const isContactNull = (contact) => {
-    if(contact === "")
-        return true;
-    return false;
-}
-const getLastUpdateDate = (date) => {
-    $.ajax({
-        url: 'php/isLessThanDate.php',
-        type: 'POST',
-        dataType: "json",
-        data: {date: date},
-        success: data => {
-            alert(data);
-        },
-        error: err => {
-            console.log(err)
-        }
-    });
 }
 
 //https://b24-0cqi8z.bitrix24.ru/rest/1/se7dqno8wl2da734/crm.lead.add.json

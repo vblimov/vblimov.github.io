@@ -1,24 +1,33 @@
 <?php
-
+include 'workWithFiles.php';
 const requestLogin = '2543123023';          //логин
 const requestPassword = '159753209';        //пароль
 const requestAutopoiskID = '123456';        //id автопоиска
 const requestReportID = '33934';            //id отчёта, по которому необходимо получить информацию
 const requestYear = '2020';                 //год, за который необходимо получить тендеры
+$isForcePrev = -1;
 /*= 'https://www.tenderland.ru/pages/main' .
 '?api=1&login=' . requestLogin .
 '&password=' . requestPassword .
 '&request_id=' . $requestID .
 '';*/
-const getRequestID_URL = 'https://www.tenderland.ru/pages/main' .   //url для получения request_id
-    '?autopoisk=' . requestAutopoiskID .
-    '&api=1&force_prev=0&report=' . requestReportID .
-    '&login=' . requestLogin .
-    '&password=' . requestPassword .
-    '&year=' . requestYear .
-    '';
+
 
 function getRequestID() {
+    $isForcePrev = readMyFiles('./isForcePrev.txt');
+    if($isForcePrev !== '0')
+    {
+        $isForcePrev = '1';
+        writeToFile('./isForcePrev.txt', '0');
+    }
+    $getRequestID_URL = 'https://www.tenderland.ru/pages/main' .   //url для получения request_id
+        '?autopoisk=' . requestAutopoiskID .
+        '&api=1&force_prev='. $isForcePrev .
+        '&report=' . requestReportID .
+        '&login=' . requestLogin .
+        '&password=' . requestPassword .
+        '&year=' . requestYear .
+        '';
     try {
         $curl = curl_init();
         if ($curl === false) {
@@ -29,7 +38,7 @@ function getRequestID() {
             CURLOPT_SSL_VERIFYHOST => 0,
             CURLOPT_POST => 1,
             CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => getRequestID_URL,
+            CURLOPT_URL => $getRequestID_URL,
             CURLOPT_TIMEOUT => 60
         ));
         $request = curl_exec($curl);
