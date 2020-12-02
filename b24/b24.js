@@ -1,16 +1,26 @@
 let TenderLandButton = document.querySelector('.TenderLand');
 
 let defaultDelay = 120000; //delay between requests (1000 == 1s)
-let hour = 60;
-let minute = 60;
-let day = 24;
-let delayBetweenGetNewContacts = 1000 * minute * hour * day;
 let proxy_URL = 'https://cors-anywhere.herokuapp.com/'; //if hosting will work => change it to ""
 let fileLinks = [];
 let contactsOfWinners = [];
 
 
 TenderLandButton.addEventListener('click', event => {
+    
+//     $.ajax({
+//                 url: 'b24/getContacts.php',
+//                 type: 'POST',
+//                 dataType: "json",
+//                 success: data => {
+//                     console.log(data)
+//                 },
+//                 error: err => {
+//                     console.log(err)
+// }
+//             })
+// })
+
     return new Promise((resolve, reject) => {
         console.log('here')
         $.ajax({
@@ -19,34 +29,37 @@ TenderLandButton.addEventListener('click', event => {
             dataType: "json",
             success: data => {
                 console.log(data)
-                resolve(data["request_id"])
+                // resolve(data["request_id"])
             },
             error: err => {
                 reject();}
         });
-    }).then(data => {
+        // resolve('9aedf1067bf18e3a50d76c89ca7e5f9e');
+    }).then( (requestID) => {
         return new Promise((resolve, reject) => {
-            let timerGetResponseFile = setInterval(() => { //timer between trying to get response with reportLink
+            // let timerGetResponseFile = setInterval(() => { //timer between trying to get response with reportLink
                 $.ajax({
                     url: 'b24/getFileLinks.php',
                     type: 'POST',
                     dataType: "json",
-                    data: {requestID: data}, //send request_id to php
+                    data: {requestID: requestID}, //send request_id to php
                     success: response => { //get json response
+                        console.log(response)
                         if (response.data.length !== 0) { //if json had !empty array => report ready
-                            clearInterval(timerGetResponseFile); //stop interval timer
+                            // clearInterval(timerGetResponseFile); //stop interval timer
                             for (let i = 0; i < response.data.length; i++) {
                                 fileLinks.push(response.data[i].file); //write all links into array
                             }
                             console.log(fileLinks)
+                            return;
                             resolve();
                         }
                     },
                     error: err => {
-                        reject();
+                        console.log(err)
                     }
                 });
-            }, defaultDelay) //delay between calls
+            // }, defaultDelay) //delay between calls
         }).then(()=> {
             let responseXML = [];
             let request = new XMLHttpRequest();
@@ -115,4 +128,3 @@ TenderLandButton.addEventListener('click', event => {
     }).catch(()=>{})
 
 })
-// setInterval(getContacts, delayBetweenGetNewContacts);
