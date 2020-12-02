@@ -1,6 +1,6 @@
 const TenderLandButton = document.querySelector('.TenderLand');
 
-const defaultDelay = 120000; //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
+const defaultDelay = 12000; //задежка, с которой отправляется запрос на получение ссылки на файл с отчётом (1000 = 1s)
 //не ставить значение меньше 10сек!!!!
 const proxy_URL = 'https://cors-anywhere.herokuapp.com/';
 let fileLinks = [];
@@ -10,14 +10,14 @@ let contactsOfWinners = [];
 
 TenderLandButton.addEventListener('click', event => {
     event.preventDefault();
-     getRequestID().then((data)=>{
-        getFileLinks(data).then(() => {
-            getAndFilterFiles();
-            })//5c2579457427c4136ac3cb8fe3acb94c
-         // 1bedbd1136f73736fcc0c86844d7f75b //b2df0b9d3e31d68fee247032319bef8f
-     }).catch(err=> {
-         console.log(err)
-     })
+     // getRequestID().then((data)=>{
+     //    getFileLinks(data).then(() => {
+     //        getAndFilterFiles();
+     //        })//5c2579457427c4136ac3cb8fe3acb94c
+     //     // 1bedbd1136f73736fcc0c86844d7f75b //b2df0b9d3e31d68fee247032319bef8f
+     // }).catch(err=> {
+     //     console.log(err)
+     // })
 
     // getAndFilterFiles();
 })
@@ -135,17 +135,10 @@ const filterFiles = (responseXML) => {
     })
 }
 
-//https://b24-0cqi8z.bitrix24.ru/rest/1/se7dqno8wl2da734/crm.lead.add.json
-//{"status":"ok","request_id":"0561b22f51fdbef3824a911787d21441"}
-//0561b22f51fdbef3824a911787d21441
-//{
-// "status":"ok",
-// "data":[{
-//  "file":"http:\/\/www.tenderland.ru\/content\/99b8660aafccae8ef7cf03dd3e0236be.part1.xml",
-//  "created":"2020-11-29 11:12:21",
-//  "items_count":"1292",
-//  "description":"\u0412\u044b\u0433\u0440\u0443\u0436\u0435\u043d\u043e 1292 \u0441\u0442\u0440\u043e\u043a (\u0432\u0441\u0435\u0433\u043e 1292)",
-//  "is_last":"1"}]}
+const repeatFunc = () => {
+    console.log(new Date.toLocaleString());
+}
+setInterval(repeatFunc, defaultDelay);
 //<protocol_contact_winner>ФИНЧЕНКО КСЕНИЯ АЛЕКСАНДРОВНА 79264692678 ksenia.kafar@yandex.ru</protocol_contact_winner>
 
 
