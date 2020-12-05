@@ -74,23 +74,20 @@ const showAllPosts = (userID, isPrev) => {
             database.ref('users/'+userID).once('value', snapshot => {
                 postsCount = snapshot.val().postsOnPage;
                 if(parseInt(isPrev) === 0 || parseInt(isPrev) === 1){
-
-                    if(parseInt(isPrev) === 1) {
+                    if(parseInt(isPrev) === 1 && showedPosts < posts.length-parseInt(postsCount)-1) {
                         showedPosts = parseInt(showedPosts)+parseInt(postsCount);
-                        console.log(showedPosts + " next")
                         //nextPage
-                    } else if (showedPosts !== 0) {
+                    } else if (parseInt(isPrev) === 0 && showedPosts !== 0) {
                         showedPosts=parseInt(showedPosts)-parseInt(postsCount);
-                        console.log(showedPosts + " prev")
                         //prevPage
+                    } else {
+                        return;
                     }
-                    console.log(showedPosts !== 0)
                 }
                 counter = 0;
                 posts.reverse().forEach(post => {
                     if(counter >= showedPosts && counter < parseInt(showedPosts)+parseInt(postsCount)){
                         postsHTML+=post;
-                        console.log(counter)
                     }
                     
                     counter++;
