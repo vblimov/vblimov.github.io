@@ -25,6 +25,8 @@ const setUsers = {
     auth.onAuthStateChanged(user => {
       if(user){
         this.user = user;
+        console.log(this.user.uid)
+        showAllPosts(this.user.uid);
       } else {
         this.user = null;
       }

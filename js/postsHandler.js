@@ -7,21 +7,14 @@ const prevPageButton = document.querySelector('.prev-page-button');
 const adminEmail = 'vblimov@gmail.com'
 let editablePostID;
 let showedPosts = 0;
-const showAllPosts = (userID) => {
-    let postsCount = 999999;
-    if(userID)
-    {
-        database.ref('users/'+userID).once('value', snapshot => {
-            postsCount = snapshot.val().postsOnPage;
-        })
-    }
+let postsCount = 999999;
+const showAllPosts = (userID, isPrev) => {
     let postsHTML = '';
     let posts = [];
     let counter = 0;
     database.ref('post').orderByChild('id').once('value', snapshot => {
         (snapshot || []).forEach(item=>{
-            
-            posts.push(`
+                posts.push(`
               <section class="post">
                 <div class="post-body">
                   <h2 class="post-title">${item.val().title}</h2>
@@ -55,13 +48,13 @@ const showAllPosts = (userID) => {
                 </svg>
             </button>
                     ${setUsers.user? item.val().author.email === (setUsers.user.email || null) || setUsers.user.email === adminEmail?
-                          `<button class="post-button post-button-delete" value="${item.val().id}" onclick="deletePost(value)">
+                    `<button class="post-button post-button-delete" value="${item.val().id}" onclick="deletePost(value)">
                   <svg width="17" height="19" class="icon icon-delete">
                     <use xlink:href="img/icons.svg#delete"></use>
                   </svg>
                 </button>`: `` :``}
                     ${setUsers.user? item.val().author.email === (setUsers.user.email || null) || setUsers.user.email === adminEmail?
-                `<button class="post-button post-button-edit" value="${item.val().id}" onclick="editPost(value)">
+                    `<button class="post-button post-button-edit" value="${item.val().id}" onclick="editPost(value)">
                   <svg width="17" height="19" class="icon icon-edit">
                     <use xlink:href="img/icons.svg#edit"></use>
                   </svg>
@@ -76,19 +69,49 @@ const showAllPosts = (userID) => {
                 </div>
                 </div>
               </section>`);
-            counter++;
-        })
-    }).then(()=> {
-        posts.reverse().forEach(post => {postsHTML+=post;})
-        postsHTML+=`<div class="post-buttons">
-                        <button class="page-buttons prev-page-button">\<</button>
-                        <button class="page-buttons next-page-button">\></button>
-                  </div>`;
-        postsWrapper.innerHTML = postsHTML;
-        postsHTML = '';
-        addPostForm.classList.remove('visible');
-        editPostForm.classList.remove('visible');
-        postsWrapper.classList.add('visible');
+    })}).then(()=> {
+        if(userID) {
+            database.ref('users/'+userID).once('value', snapshot => {
+                postsCount = snapshot.val().postsOnPage;
+                if(parseInt(isPrev) === 0 || parseInt(isPrev) === 1){
+
+                    if(parseInt(isPrev) === 1) {
+                        showedPosts = parseInt(showedPosts)+parseInt(postsCount);
+                        console.log(showedPosts + " next")
+                        //nextPage
+                    } else if (showedPosts !== 0) {
+                        showedPosts=parseInt(showedPosts)-parseInt(postsCount);
+                        console.log(showedPosts + " prev")
+                        //prevPage
+                    }
+                    console.log(showedPosts !== 0)
+                }
+                counter = 0;
+                posts.reverse().forEach(post => {
+                    if(counter >= showedPosts && counter < parseInt(showedPosts)+parseInt(postsCount)){
+                        postsHTML+=post;
+                        console.log(counter)
+                    }
+                    
+                    counter++;
+                })
+                postsWrapper.innerHTML = postsHTML;
+                postsHTML = '';
+                addPostForm.classList.remove('visible');
+                editPostForm.classList.remove('visible');
+                postsWrapper.classList.add('visible');
+            })
+        } else {
+            posts.reverse().forEach(post => {
+                    postsHTML+=post;
+            })
+            postsWrapper.innerHTML = postsHTML;
+            postsHTML = '';
+            addPostForm.classList.remove('visible');
+            editPostForm.classList.remove('visible');
+            postsWrapper.classList.add('visible');
+        }
+        
     })
 }
 const showAddPosts = () => {
@@ -106,9 +129,14 @@ const showEditPosts = (title, text, tags, postID) => {
     postsWrapper.classList.remove('visible');
 }
 const postHandlerInit = () => {
-    showAllPosts(auth.currentUser.uid);
+    showAllPosts();
     nextPageButton.addEventListener('click', event => {
         event.preventDefault();
+        showAllPosts(auth.currentUser.uid, 1)
+    })
+    prevPageButton.addEventListener('click', event => {
+        event.preventDefault();
+        showAllPosts(auth.currentUser.uid, parseInt(0))
     })
     newPostButton.addEventListener('click', event => {
         event.preventDefault();
@@ -212,3 +240,75 @@ document.addEventListener('DOMContentLoaded', ()=> {
 })
 
 
+/*database.ref('post').orderByChild('id').once('value', snapshot => {
+        (snapshot || []).forEach(item=>{
+            
+            posts.push(`
+              <section class="post">
+                <div class="post-body">
+                  <h2 class="post-title">${item.val().title}</h2>
+                  <p class="post-text" >${item.val().text}</p>
+                  <div class="tags">
+                    ${(item.val().tags || []).map(tag=>`<a href="#" class="tag">#${tag}</a>`)}
+                  </div>
+                </div>
+                <div class="post-footer">
+                  <div class="post-buttons">
+                    <button class="post-button post-button-likes">
+                <svg width="19" height="20" class="icon icon-like">
+                  <use xlink:href="img/icons.svg#like"></use>
+                </svg>
+                <span class="post-button likes-counter">${item.val().like}</span>
+              </button>
+                    <button class="post-button post-button-comments">
+                <svg width="21" height="21" class="icon icon-comment">
+                  <use xlink:href="img/icons.svg#comment"></use>
+                </svg>
+              <span class="comments-counter">${item.val().comments}</span>
+            </button>
+                    <button class="post-button post-button-save">
+                <svg width="19" height="19" class="icon icon-save">
+                  <use xlink:href="img/icons.svg#save"></use>
+                </svg>
+            </button>
+                    <button class="post-button post-button-share">
+                <svg width="17" height="19" class="icon icon-share">
+                  <use xlink:href="img/icons.svg#share"></use>
+                </svg>
+            </button>
+                    ${setUsers.user? item.val().author.email === (setUsers.user.email || null) || setUsers.user.email === adminEmail?
+                          `<button class="post-button post-button-delete" value="${item.val().id}" onclick="deletePost(value)">
+                  <svg width="17" height="19" class="icon icon-delete">
+                    <use xlink:href="img/icons.svg#delete"></use>
+                  </svg>
+                </button>`: `` :``}
+                    ${setUsers.user? item.val().author.email === (setUsers.user.email || null) || setUsers.user.email === adminEmail?
+                `<button class="post-button post-button-edit" value="${item.val().id}" onclick="editPost(value)">
+                  <svg width="17" height="19" class="icon icon-edit">
+                    <use xlink:href="img/icons.svg#edit"></use>
+                  </svg>
+                </button>`: `` :``}
+                  </div>
+                  <div class="post-author">
+                    <div class="author-about">
+                      <a href="#" class="author-username">${item.val().author.displayName}</a>
+                      <span class="post-time">${item.val().date}</span>
+                    </div>
+                  <a href="#" class="author-link"><img src=${item.val().author.photo || "img/avatar.jpeg"} alt="avatar" class="author-avatar"></a>
+                </div>
+                </div>
+              </section>`);
+            counter++;
+        })
+    }).then(()=> {
+        posts.reverse().forEach(post => {postsHTML+=post;})
+        postsHTML+=`<div class="post-buttons">
+                        <button class="page-buttons prev-page-button">\<</button>
+                        <button class="page-buttons next-page-button">\></button>
+                  </div>`;
+        postsWrapper.innerHTML = postsHTML;
+        postsHTML = '';
+        addPostForm.classList.remove('visible');
+        editPostForm.classList.remove('visible');
+        postsWrapper.classList.add('visible');
+    })*/

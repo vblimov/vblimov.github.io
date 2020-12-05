@@ -47,5 +47,5 @@ const toggleAuthDom = () => {
         postsWrapper.classList.add('visible');
     }
     
-    showAllPosts();
+
 }
