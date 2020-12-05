@@ -78,6 +78,7 @@ const setUsers = {
       database.ref('users/'+user.uid).update({
         postsOnPage: postsCount
       })
+        showAllPosts(user.uid);
     }
 
   },
@@ -131,12 +132,13 @@ const loginFormInit = () => {
     editPhotoURL.value = setUsers.user.photoURL;
     database.ref('users/'+auth.currentUser.uid).once('value', snapshot => {
       editPostsCount.value = snapshot.val().postsOnPage;
+      
     })
   });
   editElemContainer.addEventListener('submit', event =>{
 
     event.preventDefault();
-    setUsers.editUser(editUsername.value, editPhotoURL.value, editPostsCount.value, toggleAuthDom);
+    setUsers.editUser(editUsername.value, editPhotoURL.value, editPostsCount.value < 0 ? 1 : editPostsCount.value, toggleAuthDom);
     editElemContainer.classList.remove('visible');
   });
   
