@@ -14,6 +14,7 @@ const editButton = document.querySelector('.edit-button');
 
 const editUsername = document.querySelector('.edit-username');
 const editPhotoURL = document.querySelector('.edit-photo');
+const editPostsCount = document.querySelector('.edit-postsCount');
 const userAvatarElem = document.querySelector('.user-avatar');
 
 
@@ -54,7 +55,7 @@ const setUsers = {
           alert(err.message)
         });
   },
-  editUser(displayName, photoURL, handler){
+  editUser(displayName, photoURL, postsCount, handler){
     
     const user = auth.currentUser;
     
@@ -69,6 +70,12 @@ const setUsers = {
           displayName
         }).then(handler)
       }
+    }
+    if(postsCount)
+    {
+      database.ref('users/'+user.uid).update({
+        postsOnPage: postsCount
+      })
     }
 
   },
@@ -119,11 +126,15 @@ const loginFormInit = () => {
     event.preventDefault();
     editElemContainer.classList.toggle('visible');
     editUsername.value = setUsers.user.displayName;
+    editPhotoURL.value = setUsers.user.photoURL;
+    database.ref('users/'+auth.currentUser.uid).once('value', snapshot => {
+      editPostsCount.value = snapshot.val().postsOnPage;
+    })
   });
   editElemContainer.addEventListener('submit', event =>{
 
     event.preventDefault();
-    setUsers.editUser(editUsername.value, editPhotoURL.value, toggleAuthDom);
+    setUsers.editUser(editUsername.value, editPhotoURL.value, editPostsCount.value, toggleAuthDom);
     editElemContainer.classList.remove('visible');
   });
   

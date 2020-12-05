@@ -25,7 +25,7 @@ menuToggle.addEventListener('click', function (event) {
 })
 
 const  DEFAULT_PHOTO = userAvatarElem.src;
-//1.41
+
 const toggleAuthDom = () => {
     
     const user = setUsers.user;

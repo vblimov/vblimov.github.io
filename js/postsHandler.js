@@ -2,13 +2,25 @@ const postsWrapper = document.querySelector('.posts');
 const newPostButton = document.querySelector('.button-new-post');
 const addPostForm = document.querySelector('.add-post');
 const editPostForm = document.querySelector('.edit-post');
+const nextPageButton = document.querySelector('.next-page-button');
+const prevPageButton = document.querySelector('.prev-page-button');
 const adminEmail = 'vblimov@gmail.com'
 let editablePostID;
-const showAllPosts = () => {
+let showedPosts = 0;
+const showAllPosts = (userID) => {
+    let postsCount = 999999;
+    if(userID)
+    {
+        database.ref('users/'+userID).once('value', snapshot => {
+            postsCount = snapshot.val().postsOnPage;
+        })
+    }
     let postsHTML = '';
     let posts = [];
-    database.ref('post').orderByChild('date').once('value', snapshot => {
+    let counter = 0;
+    database.ref('post').orderByChild('id').once('value', snapshot => {
         (snapshot || []).forEach(item=>{
+            
             posts.push(`
               <section class="post">
                 <div class="post-body">
@@ -64,9 +76,14 @@ const showAllPosts = () => {
                 </div>
                 </div>
               </section>`);
+            counter++;
         })
     }).then(()=> {
         posts.reverse().forEach(post => {postsHTML+=post;})
+        postsHTML+=`<div class="post-buttons">
+                        <button class="page-buttons prev-page-button">\<</button>
+                        <button class="page-buttons next-page-button">\></button>
+                  </div>`;
         postsWrapper.innerHTML = postsHTML;
         postsHTML = '';
         addPostForm.classList.remove('visible');
@@ -89,8 +106,10 @@ const showEditPosts = (title, text, tags, postID) => {
     postsWrapper.classList.remove('visible');
 }
 const postHandlerInit = () => {
-    showAllPosts();
-    
+    showAllPosts(auth.currentUser.uid);
+    nextPageButton.addEventListener('click', event => {
+        event.preventDefault();
+    })
     newPostButton.addEventListener('click', event => {
         event.preventDefault();
         showAddPosts();
@@ -123,7 +142,7 @@ const postHandlerInit = () => {
             like: 0,
             comments: 0,
         })
-        showAllPosts();
+        showAllPosts(auth.currentUser.uid);
         
         addPostForm.reset();
     })
@@ -155,7 +174,7 @@ const postHandlerInit = () => {
             like: 0,
             comments: 0,
         })
-        showAllPosts();
+        showAllPosts(auth.currentUser.uid);
         
         editPostForm.reset();
     })
@@ -168,7 +187,7 @@ const deletePost = (postID) => {
                 if(item.val().id === postID){
                     database.ref('post').child(item.key).remove()
                         .then(()=>{
-                            showAllPosts()
+                            showAllPosts(auth.currentUser.uid)
                             return true;
                         })
                 }
